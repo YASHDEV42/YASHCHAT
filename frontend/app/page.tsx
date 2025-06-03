@@ -1,11 +1,20 @@
+"use client";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, Users, Shield, Zap } from "lucide-react";
+import { isAuthenticated } from "@/lib/auth";
 
 export default function Home() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setIsLoggedIn(isAuthenticated());
+  }, []);
+
   return (
     <div className="flex flex-col min-h-screen">
-      <section className="py-20 md:py-28 bg-gradient-to-b from-background to-muted">
+      <section className="py-20 md:py-28 bg-background">
         <div className="container px-4 md:px-6">
           <div className="flex flex-col items-center space-y-4 text-center">
             <div className="space-y-2">
@@ -23,18 +32,26 @@ export default function Home() {
                   Get Started
                 </Button>
               </Link>
-              <Link href="/login">
-                <Button size="lg" variant="outline" className="mt-4">
-                  Login
-                </Button>
-              </Link>
+              {isLoggedIn ? (
+                <Link href="/chat">
+                  <Button size="lg" variant="outline" className="mt-4">
+                    Chat Now
+                  </Button>
+                </Link>
+              ) : (
+                <Link href="/login">
+                  <Button size="lg" variant="outline" className="mt-4">
+                    Login
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-12 md:py-20 bg-background">
+      <section className="py-12 px-20 md:py-20 bg-background">
         <div className="container px-4 md:px-6">
           <h2 className="text-2xl font-bold text-center mb-8 md:text-3xl">
             Key Features

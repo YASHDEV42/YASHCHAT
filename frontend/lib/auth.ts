@@ -5,7 +5,6 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  avatar?: string;
 }
 
 export const getCurrentUser = (): User | null => {
@@ -14,14 +13,13 @@ export const getCurrentUser = (): User | null => {
   const token = localStorage.getItem("token");
   if (!token) return null;
 
-  // In a real app, you would decode the JWT and validate it
-  // For demo purposes, we'll return a mock user
-  return {
-    id: "1",
-    name: "Demo User",
-    email: "user@example.com",
-    avatar: "/placeholder.svg?height=40&width=40",
-  };
+  try {
+    const user = JSON.parse(atob(token.split(".")[1]));
+    return user as User;
+  } catch (error) {
+    console.error("Failed to parse user from token", error);
+    return null;
+  }
 };
 
 export const isAuthenticated = (): boolean => {

@@ -1,108 +1,63 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { io, type Socket } from "socket.io-client";
-
-// This would be your actual backend URL in production
-const SOCKET_URL = "http://localhost:5000";
 
 export interface Message {
   id: string;
   senderId: string;
   content: string;
   timestamp: Date;
+  senderName?: string;
 }
 
-let socket: Socket | null = null;
-
-export const useSocket = () => {
-  const [isConnected, setIsConnected] = useState(false);
+export function useSocket() {
+  const [socket, setSocket] = useState<Socket | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    // Initialize socket connection
-    if (!socket) {
-      const token = localStorage.getItem("token");
+    const socketInstance = io(
+      process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001"
+    );
 
-      if (!token) return;
-
-      socket = io(SOCKET_URL, {
-        auth: {
-          token,
-        },
-      });
-    }
-
-    // Socket event handlers
-    socket.on("connect", () => {
-      console.log("Socket connected");
+    socketInstance.on("connect", () => {
       setIsConnected(true);
     });
 
-    socket.on("disconnect", () => {
-      console.log("Socket disconnected");
+    socketInstance.on("disconnect", () => {
       setIsConnected(false);
     });
 
-    socket.on("message", (message: Message) => {
+    socketInstance.on("message", (message: Message) => {
       setMessages((prev) => [...prev, message]);
     });
 
-    // Load initial messages (mock data for demo)
-    setMessages([
-      {
-        id: "1",
-        senderId: "2",
-        content: "Hey there! How are you?",
-        timestamp: new Date(Date.now() - 3600000),
-      },
-      {
-        id: "2",
-        senderId: "1", // Current user
-        content: "I'm good, thanks! How about you?",
-        timestamp: new Date(Date.now() - 3500000),
-      },
-      {
-        id: "3",
-        senderId: "2",
-        content: "Doing well! Just checking out this new chat app.",
-        timestamp: new Date(Date.now() - 3400000),
-      },
-    ]);
+    socketInstance.on("messageHistory", (history: Message[]) => {
+      setMessages(history);
+    });
 
-    // Cleanup on unmount
+    setSocket(socketInstance);
+
     return () => {
-      if (socket) {
-        socket.off("connect");
-        socket.off("disconnect");
-        socket.off("message");
-      }
+      socketInstance.disconnect();
     };
   }, []);
 
-  const sendMessage = (content: string) => {
-    if (!socket || !isConnected) return false;
+  const sendMessage = useCallback(
+    (content: string): boolean => {
+      if (!socket || !isConnected) return false;
 
-    const newMessage: Omit<Message, "id" | "timestamp"> = {
-      senderId: "1", // Current user ID
-      content,
-    };
-
-    socket.emit("message", newMessage);
-
-    const mockResponse: Message = {
-      ...newMessage,
-      id: Date.now().toString(),
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, mockResponse]);
-    return true;
-  };
+      socket.emit("sendMessage", { content });
+      return true;
+    },
+    [socket, isConnected]
+  );
 
   return {
-    isConnected,
     messages,
     sendMessage,
+    isConnected,
+    socket,
   };
-};
+}
