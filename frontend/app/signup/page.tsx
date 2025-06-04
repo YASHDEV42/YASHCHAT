@@ -81,8 +81,7 @@ export default function Signup() {
       if (!res.ok) {
         throw new Error(data.message || "Signup failed");
       }
-      localStorage.setItem("token", data.token);
-      router.push("/chat");
+      router.push("/login");
     } catch (error: unknown) {
       let message = "An unknown error occurred";
 

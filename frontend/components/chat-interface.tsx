@@ -11,21 +11,28 @@ import {
   CardContent,
   CardFooter,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
-import { Send } from "lucide-react";
+import { Send, Paperclip, MoreVertical, Smile } from "lucide-react";
 import { useSocket, type Message } from "@/lib/socket";
-import { getCurrentUser, type User } from "@/lib/auth";
+import type { User } from "@/lib/auth";
+import type { Chat } from "@/components/chat-app";
 
-export default function ChatInterface() {
-  const { messages, sendMessage, isConnected } = useSocket();
+interface ChatInterfaceProps {
+  chat: Chat;
+  currentUser: User;
+}
+
+export default function ChatInterface({
+  chat,
+  currentUser,
+}: ChatInterfaceProps) {
+  const { messages, sendMessage, isConnected } = useSocket(chat.id || "");
   const [newMessage, setNewMessage] = useState("");
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setCurrentUser(getCurrentUser());
-  }, []);
+  // Get the other user in the chat
+  const otherUser =
+    chat.users.find((user) => user.id !== currentUser.id) || chat.users[0];
 
   useEffect(() => {
     scrollToBottom();
@@ -39,7 +46,7 @@ export default function ChatInterface() {
     e.preventDefault();
     if (!newMessage.trim() || !isConnected) return;
 
-    const success = sendMessage(newMessage);
+    const success = sendMessage(newMessage, chat.id, otherUser.id);
     if (success) {
       setNewMessage("");
     }
@@ -53,86 +60,149 @@ export default function ChatInterface() {
     }).format(new Date(date));
   };
 
-  if (!currentUser) {
-    return (
-      <div className="flex items-center justify-center h-[calc(100vh-64px)]">
-        <p>Please log in to access the chat.</p>
-      </div>
-    );
-  }
+  const formatDate = (date: Date) => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const messageDate = new Date(date);
+
+    if (messageDate.toDateString() === today.toDateString()) {
+      return "Today";
+    } else if (messageDate.toDateString() === yesterday.toDateString()) {
+      return "Yesterday";
+    } else {
+      return new Intl.DateTimeFormat("en-US", {
+        month: "short",
+        day: "numeric",
+      }).format(messageDate);
+    }
+  };
+
+  // Group messages by date
+  const groupMessagesByDate = (messages: Message[]) => {
+    const groups: { [key: string]: Message[] } = {};
+
+    messages.forEach((message) => {
+      const date = formatDate(new Date(message.timestamp));
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(message);
+    });
+
+    return Object.entries(groups);
+  };
 
   return (
-    <Card className="w-full h-[calc(100vh-80px)] flex flex-col">
-      <CardHeader className="border-b">
-        <CardTitle className="flex items-center">
-          <div className="relative mr-2">
-            <div
-              className={`absolute bottom-0 right-0 w-3 h-3 rounded-full ${
-                isConnected ? "bg-green-500" : "bg-red-500"
-              }`}
-            ></div>
+    <Card className="flex flex-col h-full rounded-none border-0 bg-background">
+      <CardHeader className="border-b px-4 bg-background">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center">
             <Avatar>
               <AvatarImage
-                src="/placeholder.svg?height=40&width=40"
-                alt="User"
+                src={"/placeholder.svg?height=40&width=40"}
+                alt={otherUser.username}
               />
-              <AvatarFallback>U</AvatarFallback>
+              <AvatarFallback>{otherUser.username.charAt(0)}</AvatarFallback>
             </Avatar>
-          </div>
-          <div>
-            <div>Chat Room</div>
-            <div className="text-xs text-muted-foreground">
-              {isConnected ? "Connected" : "Disconnected"}
-            </div>
-          </div>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex-1 overflow-y-auto p-4">
-        <div className="space-y-4">
-          {messages.map((message: Message) => (
-            <div
-              key={message.id}
-              className={`flex ${
-                message.senderId === currentUser.id
-                  ? "justify-end"
-                  : "justify-start"
-              }`}
-            >
-              <div
-                className={`max-w-[80%] rounded-lg p-3 ${
-                  message.senderId === currentUser.id
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted"
-                }`}
-              >
-                <div className="text-sm">{message.content}</div>
-                <div
-                  className={`text-xs mt-1 ${
-                    message.senderId === currentUser.id
-                      ? "text-primary-foreground/70"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {formatTime(message.timestamp)}
-                </div>
+            <div className="ml-3">
+              <div className="font-medium">{otherUser.username}</div>
+              <div className="text-xs text-muted-foreground">
+                {isConnected ? "Online" : "Offline"}
               </div>
             </div>
-          ))}
-          <div ref={messagesEndRef} />
+          </div>
+          <Button variant="ghost" size="icon">
+            <MoreVertical className="h-5 w-5" />
+          </Button>
         </div>
+      </CardHeader>
+
+      <CardContent className="flex-1 overflow-y-auto p-4 bg-background">
+        {messages.length === 0 ? (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            <p>No messages yet. Start a conversation!</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {groupMessagesByDate(messages).map(([date, dateMessages]) => (
+              <div key={date} className="space-y-3">
+                <div className="flex justify-center">
+                  <span className="bg-muted px-3 py-1 rounded-full text-xs text-muted-foreground">
+                    {date}
+                  </span>
+                </div>
+
+                {dateMessages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${
+                      message.senderId === currentUser.id
+                        ? "justify-end"
+                        : "justify-start"
+                    }`}
+                  >
+                    <div
+                      className={`max-w-[70%] rounded-lg p-3 ${
+                        message.senderId === currentUser.id
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-foreground"
+                      }`}
+                    >
+                      <div className="text-sm">{message.content}</div>
+                      <div
+                        className={`text-xs text-right mt-1 ${
+                          message.senderId === currentUser.id
+                            ? "text-primary-foreground/70"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {formatTime(message.timestamp)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
       </CardContent>
-      <CardFooter className="border-t p-4">
-        <form onSubmit={handleSendMessage} className="flex w-full gap-2">
+
+      <CardFooter className="border-t p-3 bg-background">
+        <form
+          onSubmit={handleSendMessage}
+          className="flex w-full gap-2 items-center"
+        >
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground"
+          >
+            <Smile className="h-5 w-5" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground"
+          >
+            <Paperclip className="h-5 w-5" />
+          </Button>
           <Input
-            placeholder="Type your message..."
+            placeholder="Type a message"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             disabled={!isConnected}
+            className="flex-1"
           />
           <Button
             type="submit"
             size="icon"
             disabled={!isConnected || !newMessage.trim()}
+            className="rounded-full"
           >
             <Send className="h-4 w-4" />
           </Button>

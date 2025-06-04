@@ -64,9 +64,8 @@ export default function Login() {
         setLoading(false);
         return;
       }
-      // Save token to local storage or context
+
       localStorage.setItem("token", data.token);
-      // Redirect to chat page
       router.push("/chat");
     } catch (error) {
       console.error("Login failed", error);

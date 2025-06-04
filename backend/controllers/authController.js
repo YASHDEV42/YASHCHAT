@@ -34,9 +34,18 @@ exports.login = async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ message: "Password is incorrect" });
     }
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+    console.log("user information before token generation:", {
+      id: user._id,
+      username: user.username,
+      email: user.email,
     });
+    const token = jwt.sign(
+      { id: user._id, username: user.username, email: user.email },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1h",
+      }
+    );
     res.status(200).json({
       token,
       user: { id: user._id, username: user.username, email: user.email },

@@ -2,8 +2,8 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import ChatInterface from "@/components/chat-interface";
 import { isAuthenticated } from "@/lib/auth";
+import ChatApp from "@/components/chat-app";
 
 export default function ChatPage() {
   const router = useRouter();
@@ -16,7 +16,7 @@ export default function ChatPage() {
 
   return (
     <div className="container py-6">
-      <ChatInterface />
+      <ChatApp />
     </div>
   );
 }

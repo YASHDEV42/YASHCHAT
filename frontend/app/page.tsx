@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, Users, Shield, Zap } from "lucide-react";
 import { isAuthenticated } from "@/lib/auth";
+// import Tilt from "react-vanilla-tilt";
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -14,11 +15,15 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <section className="py-20 md:py-28 bg-background">
+      <section className="bg-background min-h-screen flex items-start py-40 md:py-44">
         <div className="container px-4 md:px-6">
+          <MessageCircle
+            className="z-0 opacity-30 blur-xl absolute top-10 right-5 text-primary mb-4"
+            size={600}
+          />
           <div className="flex flex-col items-center space-y-4 text-center">
             <div className="space-y-2">
-              <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl">
+              <h1 className="text-3xl font-bold tracking-tighter z-10 sm:text-4xl md:text-5xl lg:text-6xl">
                 Connect with friends in real-time
               </h1>
               <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
@@ -51,12 +56,13 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="py-12 px-20 md:py-20 bg-background">
+      <section className="min-h-screen px-20 bg-background flex items-center">
         <div className="container px-4 md:px-6">
           <h2 className="text-2xl font-bold text-center mb-8 md:text-3xl">
             Key Features
           </h2>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {/* <Tilt options={{ scale: 2, max: 25 }}> */}
             <div className="flex flex-col items-center space-y-4 rounded-lg border p-6 shadow-sm">
               <div className="rounded-full bg-primary/10 p-3">
                 <MessageCircle className="h-6 w-6 text-primary" />
@@ -67,6 +73,7 @@ export default function Home() {
                 system powered by Socket.io.
               </p>
             </div>
+            {/* </Tilt> */}
             <div className="flex flex-col items-center space-y-4 rounded-lg border p-6 shadow-sm">
               <div className="rounded-full bg-primary/10 p-3">
                 <Users className="h-6 w-6 text-primary" />

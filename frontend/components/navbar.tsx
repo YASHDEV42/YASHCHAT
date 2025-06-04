@@ -13,7 +13,7 @@ export default function Navbar() {
   const [isLoading, setIsLoading] = useState(true);
   const pathname = usePathname();
   useEffect(() => {
-    const user = getCurrentUser();
+    const user = getCurrentUser(localStorage.getItem("token") || "");
     setIsLoggedIn(!!user);
     setIsLoading(false);
   }, []);
