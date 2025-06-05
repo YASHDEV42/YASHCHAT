@@ -20,24 +20,71 @@ export default function ChatApp() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [chats, setChats] = useState<Chat[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const handleSelectChat = (chat: Chat) => {
+    setSelectedChat(chat);
+    // Mark messages as read
+    setChats((prevChats) =>
+      prevChats.map((c) => (c._id === chat._id ? { ...c, unreadCount: 0 } : c))
+    );
+  };
+
+  const handleStartNewChat = async (userId: string) => {
+    try {
+      const response = await fetch("http://localhost:5000/api/chats/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ userId }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create chat");
+      }
+
+      const newChat: Chat = await response.json();
+      setChats((prev) => [...prev, newChat]);
+      setSelectedChat(newChat);
+    } catch (error) {
+      console.error("Error creating chat:", error);
+    }
+  };
 
   useEffect(() => {
     const init = async () => {
-      setLoading(true);
-
       const token = localStorage.getItem("token") || "";
       const user = getCurrentUser(token);
       setCurrentUser(user);
-
+      console.log("Current user:", user);
       if (!user) {
-        setLoading(false);
         return;
       }
 
       try {
-        const response = await fetch(
-          "http://localhost:5000/api/chats/user/" + user.id,
+        // Fetch all users
+        const usersResponse = await fetch("http://localhost:5000/api/users", {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!usersResponse.ok) {
+          throw new Error("Failed to fetch users");
+        }
+        const usersData: User[] = await usersResponse.json();
+
+        const filteredUsers = usersData.filter(
+          (u) => u.username !== user.username
+        );
+        console.log("Fetched users:", filteredUsers);
+        setAllUsers(filteredUsers);
+
+        const chatsResponse = await fetch(
+          "http://localhost:5000/api/chats/user/" + user._id,
           {
             headers: {
               "Content-Type": "application/json",
@@ -45,16 +92,17 @@ export default function ChatApp() {
             },
           }
         );
-        if (!response.ok) {
+        if (!chatsResponse.ok) {
           throw new Error("Failed to fetch chats");
         }
-        const data: Chat[] = await response.json();
-        setChats(data);
-        if (data.length > 0 && !selectedChat) {
-          setSelectedChat(data[0]);
+        const chatsData: Chat[] = await chatsResponse.json();
+        setChats(chatsData);
+
+        if (chatsData.length > 0) {
+          setSelectedChat(chatsData[0]);
         }
       } catch (error) {
-        console.error("Error fetching chats:", error);
+        console.error("Error fetching data:", error);
       } finally {
         setLoading(false);
       }
@@ -62,13 +110,14 @@ export default function ChatApp() {
 
     init();
   }, []);
-  const handleSelectChat = (chat: Chat) => {
-    setSelectedChat(chat);
-    // Mark messages as read
-    setChats((prevChats) =>
-      prevChats.map((c) => (c.id === chat.id ? { ...c, unreadCount: 0 } : c))
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <p className="text-foreground">Loading...</p>
+      </div>
     );
-  };
+  }
 
   if (!currentUser) {
     return (
@@ -85,7 +134,10 @@ export default function ChatApp() {
         selectedChat={selectedChat}
         onSelectChat={handleSelectChat}
         currentUser={currentUser}
-        loading={loading}
+        loading={false}
+        allUsers={allUsers}
+        onStartNewChat={handleStartNewChat}
+        loadingUsers={false}
       />
       <div className="flex-1 flex flex-col">
         {selectedChat ? (

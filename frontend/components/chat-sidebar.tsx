@@ -4,7 +4,14 @@ import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Menu } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Search, Plus } from "lucide-react";
 import type { Chat } from "@/components/chat-app";
 import type { User } from "@/lib/auth";
 
@@ -14,6 +21,9 @@ interface ChatSidebarProps {
   onSelectChat: (chat: Chat) => void;
   currentUser: User;
   loading: boolean;
+  allUsers?: User[]; // All users available for starting new chats
+  onStartNewChat?: (userId: string) => void; // Callback to start a new chat
+  loadingUsers?: boolean; // Loading state for users
 }
 
 export default function ChatSidebar({
@@ -22,8 +32,13 @@ export default function ChatSidebar({
   onSelectChat,
   currentUser,
   loading,
+  allUsers = [],
+  onStartNewChat,
+  loadingUsers = false,
 }: ChatSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [isNewChatOpen, setIsNewChatOpen] = useState(false);
 
   const filteredChats = chats.filter((chat) => {
     const otherUser = chat.users.find((user) => user.id !== currentUser.id);
@@ -32,7 +47,21 @@ export default function ChatSidebar({
       .includes(searchQuery.toLowerCase());
   });
 
-  // Get the other user in a chat (not the current user)
+  // Filter users for new chat (exclude current user and users already in chats)
+  const filteredUsers = allUsers.filter((user) => {
+    if (user.id === currentUser.id) return false;
+
+    // Check if user already has a chat with current user
+    const hasExistingChat = chats.some((chat) =>
+      chat.users.some((chatUser) => chatUser.id === user.id)
+    );
+
+    if (hasExistingChat) return false;
+
+    return user.username.toLowerCase().includes(userSearchQuery.toLowerCase());
+  });
+
+  // Get the other user in a chat
   const getOtherUser = (chat: Chat) => {
     return (
       chat.users.find((user) => user.id !== currentUser.id) || chat.users[0]
@@ -46,6 +75,12 @@ export default function ChatSidebar({
       minute: "numeric",
       hour12: true,
     }).format(new Date(date));
+  };
+
+  const handleStartNewChat = (userId: string) => {
+    onStartNewChat?.(userId);
+    setIsNewChatOpen(false);
+    setUserSearchQuery("");
   };
 
   return (
@@ -65,83 +100,131 @@ export default function ChatSidebar({
           <span className="ml-2 font-medium">{currentUser.username}</span>
         </div>
         <div className="flex gap-2">
-          <Button variant="ghost" size="icon">
-            <Plus className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon">
-            <Menu className="h-5 w-5" />
-          </Button>
+          <Dialog open={isNewChatOpen} onOpenChange={setIsNewChatOpen}>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Plus className="h-5 w-5" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Start New Chat</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                {/* Search users */}
+                <div className="relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search users..."
+                    className="pl-8"
+                    value={userSearchQuery}
+                    onChange={(e) => setUserSearchQuery(e.target.value)}
+                  />
+                </div>
+
+                {/* Users list */}
+                <div className="max-h-80 overflow-y-auto space-y-1">
+                  {loadingUsers ? (
+                    <div className="p-4 text-center text-muted-foreground">
+                      Loading users...
+                    </div>
+                  ) : filteredUsers.length === 0 ? (
+                    <div className="p-4 text-center text-muted-foreground">
+                      {userSearchQuery
+                        ? "No users match your search"
+                        : "No new users to chat with"}
+                    </div>
+                  ) : (
+                    filteredUsers.map((user) => (
+                      <Button
+                        key={user._id}
+                        variant="ghost"
+                        className="justify-start w-full"
+                        onClick={() => handleStartNewChat(user._id)}
+                      >
+                        <Avatar className="h-10 w-10 mr-2">
+                          <AvatarImage
+                            src="/placeholder.svg?height=40&width=40"
+                            alt={user.username}
+                          />
+                          <AvatarFallback>
+                            {user.username?.charAt(0) || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span>{user.username}</span>
+                      </Button>
+                    ))
+                  )}
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
       {/* Search */}
-      <div className="p-3 border-b bg-background">
-        <div className="relative">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search or start new chat"
-            className="pl-8"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
+      <div className="p-4 border-b">
+        <Input
+          placeholder="Search messages..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
       </div>
 
-      {/* Chat list */}
-      <div className="flex-1 overflow-y-auto bg-background">
+      {/* Chat List */}
+      <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="p-4 text-center text-muted-foreground">
-            Loading chats...
+          <div className="flex items-center justify-center h-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
-        ) : filteredChats.length === 0 ? (
-          <div className="p-4 text-center text-muted-foreground">
-            {searchQuery ? "No chats match your search" : "No chats yet"}
+        ) : chats.length === 0 ? (
+          <div className="flex items-center justify-center py-8">
+            <p className="text-muted-foreground">No conversations yet</p>
           </div>
         ) : (
-          filteredChats.map((chat) => {
-            const otherUser = getOtherUser(chat);
-            return (
+          <div className="space-y-1">
+            {filteredChats.map((chat) => (
               <div
                 key={chat.id}
-                className={`flex items-center p-3 cursor-pointer hover:bg-muted/50 border-b ${
-                  selectedChat?.id === chat.id ? "bg-muted/50" : ""
+                className={`flex items-center px-4 py-3 cursor-pointer hover:bg-muted/50 ${
+                  selectedChat?.id === chat.id ? "bg-muted" : ""
                 }`}
                 onClick={() => onSelectChat(chat)}
               >
-                <Avatar className="h-12 w-12">
+                <Avatar className="h-9 w-9">
                   <AvatarImage
-                    src={"/placeholder.svg?height=48&width=48"}
-                    alt={otherUser.username}
+                    src={"/placeholder.svg?height=36&width=36"}
+                    alt={getOtherUser(chat).username || "User Avatar"}
                   />
                   <AvatarFallback>
-                    {otherUser.username.charAt(0)}
+                    {getOtherUser(chat).username?.charAt(0) || "U"}
                   </AvatarFallback>
                 </Avatar>
-                <div className="ml-3 flex-1 overflow-hidden">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium truncate">
-                      {otherUser.username}
-                    </span>
-                    {chat.lastMessage && (
-                      <span className="text-xs text-muted-foreground">
-                        {formatTime(chat.lastMessage.timestamp)}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex justify-between items-center">
+                <div className="ml-3 flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">
+                    {getOtherUser(chat).username}
+                  </p>
+                  {chat.lastMessage && (
                     <p className="text-sm text-muted-foreground truncate">
-                      {chat.lastMessage?.content || "Start a conversation"}
+                      {chat.lastMessage.content}
                     </p>
-                    {chat.unreadCount > 0 && (
-                      <span className="bg-primary text-primary-foreground rounded-full h-5 w-5 flex items-center justify-center text-xs">
-                        {chat.unreadCount}
-                      </span>
-                    )}
-                  </div>
+                  )}
+                </div>
+                <div className="ml-4 flex-shrink-0 flex items-center">
+                  {chat.lastMessage && (
+                    <p className="text-xs text-muted-foreground">
+                      {formatTime(chat.lastMessage.timestamp)}
+                    </p>
+                  )}
+                  {chat.unreadCount > 0 && (
+                    <div className="ml-2 w-4 h-4 rounded-full bg-primary text-xs flex items-center justify-center text-background">
+                      {chat.unreadCount}
+                    </div>
+                  )}
                 </div>
               </div>
-            );
-          })
+            ))}
+          </div>
         )}
       </div>
     </div>

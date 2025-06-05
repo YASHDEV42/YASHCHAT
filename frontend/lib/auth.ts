@@ -4,7 +4,7 @@
 import { jwtDecode } from "jwt-decode";
 
 export interface User {
-  id: string;
+  _id: string;
   username: string;
   email: string;
 }

@@ -26,13 +26,13 @@ export default function ChatInterface({
   chat,
   currentUser,
 }: ChatInterfaceProps) {
-  const { messages, sendMessage, isConnected } = useSocket(chat.id || "");
+  const { messages, sendMessage, isConnected } = useSocket<string>(chat._id);
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Get the other user in the chat
   const otherUser =
-    chat.users.find((user) => user.id !== currentUser.id) || chat.users[0];
+    chat.users.find((user) => user._id !== currentUser._id) || chat.users[0];
 
   useEffect(() => {
     scrollToBottom();
@@ -46,7 +46,7 @@ export default function ChatInterface({
     e.preventDefault();
     if (!newMessage.trim() || !isConnected) return;
 
-    const success = sendMessage(newMessage, chat.id, otherUser.id);
+    const success = sendMessage(newMessage, chat._id, otherUser._id);
     if (success) {
       setNewMessage("");
     }
@@ -138,14 +138,14 @@ export default function ChatInterface({
                   <div
                     key={message.id}
                     className={`flex ${
-                      message.senderId === currentUser.id
+                      message.senderId === currentUser._id
                         ? "justify-end"
                         : "justify-start"
                     }`}
                   >
                     <div
                       className={`max-w-[70%] rounded-lg p-3 ${
-                        message.senderId === currentUser.id
+                        message.senderId === currentUser._id
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted text-foreground"
                       }`}
@@ -153,7 +153,7 @@ export default function ChatInterface({
                       <div className="text-sm">{message.content}</div>
                       <div
                         className={`text-xs text-right mt-1 ${
-                          message.senderId === currentUser.id
+                          message.senderId === currentUser._id
                             ? "text-primary-foreground/70"
                             : "text-muted-foreground"
                         }`}
