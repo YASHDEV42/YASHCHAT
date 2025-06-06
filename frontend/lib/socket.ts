@@ -1,83 +1,96 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { io, type Socket } from "socket.io-client";
 
 export interface Message {
   id: string;
   senderId: string;
   content: string;
+  chatId: string;
+  receiverId?: string;
   timestamp: Date;
-  senderName?: string; // Optional: if you want to display names
+  senderName?: string;
 }
 
-export function useSocket({ chatId }: { chatId: string }) {
-  const [socket, setSocket] = useState<Socket | null>(null);
+export function useSocket(chatId: string) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isConnected, setIsConnected] = useState(false);
-  console.log("Initializing socket connection for chatId:", chatId);
+  const socketRef = useRef<Socket | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
+    console.log("useSocket effect triggered with chatId:", chatId);
+    if (!chatId) return;
+
     const socketInstance = io(
-      process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000" // Ensure this matches your backend port
+      process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000",
+      { transports: ["websocket"] }
     );
 
+    socketRef.current = socketInstance;
+
     socketInstance.on("connect", () => {
+      console.log("Connected to socket:", socketInstance.id);
       setIsConnected(true);
-      console.log("Socket connected:", socketInstance.id);
-      // Authenticate with server
+
       const token = localStorage.getItem("token");
       if (token) {
         socketInstance.emit("authenticate", { token });
+
+        socketInstance.once("authenticated", () => {
+          socketInstance.emit("join", chatId);
+        });
       }
     });
 
     socketInstance.on("disconnect", () => {
+      console.log("Disconnected from socket");
       setIsConnected(false);
-      console.log("Socket disconnected");
     });
 
     socketInstance.on("message", (message: Message) => {
-      console.log("New message received:", message);
       setMessages((prev) => [...prev, message]);
     });
 
     socketInstance.on("messageHistory", (history: Message[]) => {
-      console.log("Message history received:", history);
       setMessages(history);
     });
 
-    // Handle authentication failure
     socketInstance.on("unauthorized", (error) => {
-      console.error("Socket authentication failed:", error.message);
-      // Optionally, handle this by logging the user out or showing a message
+      console.error("Unauthorized:", error.message);
+      setIsConnected(false);
+      localStorage.removeItem("token");
+      router.push("/login");
     });
-
-    setSocket(socketInstance);
 
     return () => {
       socketInstance.disconnect();
+      socketRef.current = null;
     };
-  }, []);
+  }, [chatId]);
 
   const sendMessage = useCallback(
-    (content: string): boolean => {
-      if (!socket || !isConnected) {
-        console.warn("Socket not connected or available for sending message");
-        return false;
-      }
+    (content: string, receiverId: string) => {
+      if (!socketRef.current || !isConnected) return false;
+      console.log("Sending message:", content);
+      console.log("Chat ID:", chatId);
+      console.log("Receiver ID:", receiverId);
+      socketRef.current.emit("sendMessage", {
+        content,
+        chatId,
+        receiverId,
+      });
 
-      // The backend will now use the authenticated userId as senderId
-      socket.emit("sendMessage", { content });
       return true;
     },
-    [socket, isConnected]
+    [isConnected, chatId]
   );
 
   return {
     messages,
     sendMessage,
     isConnected,
-    socket, // Exposing socket might be useful for advanced cases or debugging
   };
 }

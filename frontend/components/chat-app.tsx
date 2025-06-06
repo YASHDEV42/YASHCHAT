@@ -39,7 +39,7 @@ export default function ChatApp() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify({ userId }),
+        body: JSON.stringify({ userIds: [currentUser?._id, userId] }),
       });
 
       if (!response.ok) {

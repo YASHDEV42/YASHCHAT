@@ -22,7 +22,7 @@ const getChatsByUser = async (req, res) => {
       "username"
     );
     if (!chats || chats.length === 0) {
-      return res.status(200).json((chats = []));
+      return res.status(200).json([]);
     }
     res.status(200).json(chats);
   } catch (error) {

@@ -41,7 +41,7 @@ export default function ChatSidebar({
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
 
   const filteredChats = chats.filter((chat) => {
-    const otherUser = chat.users.find((user) => user.id !== currentUser.id);
+    const otherUser = chat.users.find((user) => user._id !== currentUser._id);
     return otherUser?.username
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
@@ -49,11 +49,11 @@ export default function ChatSidebar({
 
   // Filter users for new chat (exclude current user and users already in chats)
   const filteredUsers = allUsers.filter((user) => {
-    if (user.id === currentUser.id) return false;
+    if (user._id === currentUser._id) return false;
 
     // Check if user already has a chat with current user
     const hasExistingChat = chats.some((chat) =>
-      chat.users.some((chatUser) => chatUser.id === user.id)
+      chat.users.some((chatUser) => chatUser._id === user._id)
     );
 
     if (hasExistingChat) return false;
@@ -64,7 +64,7 @@ export default function ChatSidebar({
   // Get the other user in a chat
   const getOtherUser = (chat: Chat) => {
     return (
-      chat.users.find((user) => user.id !== currentUser.id) || chat.users[0]
+      chat.users.find((user) => user._id !== currentUser._id) || chat.users[0]
     );
   };
 
@@ -185,9 +185,9 @@ export default function ChatSidebar({
           <div className="space-y-1">
             {filteredChats.map((chat) => (
               <div
-                key={chat.id}
+                key={chat._id}
                 className={`flex items-center px-4 py-3 cursor-pointer hover:bg-muted/50 ${
-                  selectedChat?.id === chat.id ? "bg-muted" : ""
+                  selectedChat?._id === chat._id ? "bg-muted" : ""
                 }`}
                 onClick={() => onSelectChat(chat)}
               >

@@ -1,9 +1,6 @@
-// backend/socket/index.js
 const { Server } = require("socket.io");
-const jwt = require("jsonwebtoken"); // For verifying JWT
-
-// In-memory message store (replace with DB in production)
-const messages = [];
+const jwt = require("jsonwebtoken");
+const Message = require("../models/Message");
 
 module.exports = function socketSetup(server) {
   const io = new Server(server, {
@@ -16,7 +13,6 @@ module.exports = function socketSetup(server) {
   io.on("connection", (socket) => {
     console.log("A user connected (unauthenticated):", socket.id);
 
-    // Listen for 'authenticate' event
     socket.on("authenticate", (data) => {
       const { token } = data;
       if (!token) {
@@ -24,58 +20,97 @@ module.exports = function socketSetup(server) {
       }
 
       try {
-        // Verify the token
-        // Ensure JWT_SECRET is set in your .env file
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-        // Attach user info to the socket session
-        socket.userId = decoded.id; // Assuming your JWT payload has an 'id' field
+        console.log("Token decoded:", decoded);
+        socket.userId = decoded._id;
         socket.userName = decoded.username;
+
         console.log(
           `User ${socket.userName} (ID: ${socket.userId}) authenticated for socket: ${socket.id}`
         );
 
-        // Send message history now that user is authenticated
-        socket.emit("messageHistory", messages);
+        socket.emit("authenticated");
       } catch (err) {
         console.error("Socket authentication error:", err.message);
         socket.emit("unauthorized", { message: "Invalid token" });
-        socket.disconnect(); // Optionally disconnect if auth fails
+        socket.disconnect();
       }
     });
 
-    // Listen for 'sendMessage' from an authenticated client
-    socket.on("sendMessage", (data) => {
+    socket.on("join", async ({ chatId }) => {
       if (!socket.userId) {
-        // Should not happen if 'authenticate' is required before sending messages
-        return console.warn(
-          "sendMessage received from unauthenticated socket:",
-          socket.id
-        );
+        return console.warn("Unauthenticated socket tried to join a room.");
       }
 
-      const message = {
-        id: new Date().getTime().toString(),
-        senderId: socket.userId, // Use the authenticated user's ID
-        senderName: socket.userName || "User", // Use authenticated user's name
-        content: data.content,
-        timestamp: new Date(),
-      };
-      messages.push(message);
-      io.emit("message", message); // Broadcast to all clients
-      console.log(
-        `Message from ${message.senderName} (ID: ${message.senderId}) broadcasted: ${message.content}`
-      );
+      socket.join(chatId);
+      console.log(`User ${socket.userName} joined chat room: ${chatId}`);
+
+      try {
+        const messages = await Message.find({ chatId })
+          .sort({ createdAt: -1 })
+          .limit(50)
+          .populate("sender", "username");
+
+        const chatMessages = messages.map((msg) => ({
+          _id: msg._id,
+          sender: msg.sender._id,
+          senderName: msg.sender.username,
+          content: msg.content,
+          createdAt: msg.createdAt,
+        }));
+
+        socket.emit("messageHistory", chatMessages);
+      } catch (error) {
+        console.error("Error fetching message history:", error);
+        socket.emit("error", { message: "Failed to load messages" });
+      }
+    });
+
+    socket.on("sendMessage", async ({ content, chatId, receiverId }) => {
+      if (!socket.userId) {
+        return console.warn("Unauthenticated user tried to send a message");
+      }
+      if (!content || !chatId) {
+        return socket.emit("error", {
+          message: "Content and chatId are required",
+        });
+      }
+      try {
+        const newMessage = new Message({
+          sender: socket.userId,
+          content,
+          chatId,
+          receiver: receiverId,
+        });
+
+        await newMessage.save();
+
+        // Populate sender for sending to clients
+        const populatedMessage = await newMessage
+          .populate("sender", "username")
+          .execPopulate();
+
+        const messageToSend = {
+          _id: populatedMessage._id,
+          sender: populatedMessage.sender._id,
+          senderName: populatedMessage.sender.username,
+          content: populatedMessage.content,
+          createdAt: populatedMessage.createdAt,
+        };
+
+        io.to(chatId).emit("message", messageToSend);
+
+        console.log(
+          `Message in chat ${chatId} from ${messageToSend.senderName}: ${messageToSend.content}`
+        );
+      } catch (error) {
+        console.error("Error saving message to database:", error);
+        socket.emit("error", { message: "Failed to save message" });
+      }
     });
 
     socket.on("disconnect", () => {
-      if (socket.userName) {
-        console.log(
-          `User ${socket.userName} (ID: ${socket.userId}) disconnected from socket: ${socket.id}`
-        );
-      } else {
-        console.log("Unauthenticated user disconnected:", socket.id);
-      }
+      console.log(`User disconnected: ${socket.id}`);
     });
 
     socket.on("error", (error) => {
@@ -83,5 +118,6 @@ module.exports = function socketSetup(server) {
     });
   });
 
-  console.log("Socket.IO server initialized and awaiting connections.");
+  console.log("Socket.IO server initialized.");
+  return io;
 };

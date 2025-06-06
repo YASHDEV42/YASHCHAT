@@ -30,6 +30,7 @@ Tells Express to automatically parse incoming requests with Content-Type: applic
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/messages", require("./routes/messageRoutes"));
 app.use("/api/chats", require("./routes/chatRoutes"));
+app.use("/api/users", require("./routes/userRoutes"));
 
 socketSetup(server);
 

@@ -26,13 +26,14 @@ export default function ChatInterface({
   chat,
   currentUser,
 }: ChatInterfaceProps) {
-  const { messages, sendMessage, isConnected } = useSocket<string>(chat._id);
+  const { messages, sendMessage, isConnected } = useSocket(chat._id);
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Get the other user in the chat
   const otherUser =
     chat.users.find((user) => user._id !== currentUser._id) || chat.users[0];
+  console.log("otherUser", otherUser);
 
   useEffect(() => {
     scrollToBottom();
@@ -45,8 +46,10 @@ export default function ChatInterface({
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !isConnected) return;
-
-    const success = sendMessage(newMessage, chat._id, otherUser._id);
+    console.log("chat._id", chat._id);
+    console.log("otherUser._id", otherUser._id);
+    console.log("currentUser._id", currentUser._id);
+    const success = sendMessage(newMessage, otherUser._id);
     if (success) {
       setNewMessage("");
     }
@@ -104,7 +107,9 @@ export default function ChatInterface({
                 src={"/placeholder.svg?height=40&width=40"}
                 alt={otherUser.username}
               />
-              <AvatarFallback>{otherUser.username.charAt(0)}</AvatarFallback>
+              <AvatarFallback>
+                {otherUser?.username.charAt(0) || ""}
+              </AvatarFallback>
             </Avatar>
             <div className="ml-3">
               <div className="font-medium">{otherUser.username}</div>
