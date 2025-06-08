@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Search, Plus, X } from "lucide-react";
+import { Search, Plus } from "lucide-react";
 import type { Chat } from "@/components/chat-app";
 import type { User } from "@/lib/auth";
 
