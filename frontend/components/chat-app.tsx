@@ -40,14 +40,17 @@ export default function ChatApp() {
 
   const handleStartNewChat = async (userId: string) => {
     try {
-      const response = await fetch("http://localhost:5000/api/chats/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ userIds: [currentUser?._id, userId] }),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE}/api/chats/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({ userIds: [currentUser?._id, userId] }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to create chat");
@@ -75,12 +78,15 @@ export default function ChatApp() {
 
       try {
         // Fetch all users
-        const usersResponse = await fetch("http://localhost:5000/api/users", {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const usersResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE}/api/users`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
         if (!usersResponse.ok) {
           throw new Error("Failed to fetch users");
         }
@@ -93,7 +99,7 @@ export default function ChatApp() {
         setAllUsers(filteredUsers);
 
         const chatsResponse = await fetch(
-          "http://localhost:5000/api/chats/user/" + user._id,
+          `${process.env.NEXT_PUBLIC_API_BASE}/api/chats/user/` + user._id,
           {
             headers: {
               "Content-Type": "application/json",
