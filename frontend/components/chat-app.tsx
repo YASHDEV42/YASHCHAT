@@ -5,7 +5,7 @@ import ChatSidebar from "@/components/chat-sidebar";
 import ChatInterface from "@/components/chat-interface";
 import { getCurrentUser, type User } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { PanelLeft } from "lucide-react";
 
 export type Chat = {
   _id: string;
@@ -124,7 +124,7 @@ export default function ChatApp() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const sidebar = document.getElementById("chat-sidebar");
-      const menuButton = document.getElementById("menu-button");
+      const menuButton = document.getElementById("sidebar-trigger");
 
       if (
         sidebarOpen &&
@@ -158,18 +158,7 @@ export default function ChatApp() {
   }
 
   return (
-    <div className="flex h-full bg-background relative">
-      {/* Mobile Menu Button */}
-      <Button
-        id="menu-button"
-        variant="ghost"
-        size="icon"
-        className="fixed top-4 left-4 z-50 md:hidden"
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-      >
-        {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-      </Button>
-
+    <div className="flex h-full bg-background">
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
@@ -201,7 +190,36 @@ export default function ChatApp() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col md:ml-0">
+      <div className="flex-1 flex flex-col">
+        {/* Mobile Header with Sidebar Trigger */}
+        <div className="md:hidden flex items-center gap-2 p-4 border-b bg-background">
+          <Button
+            id="sidebar-trigger"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <PanelLeft className="h-4 w-4" />
+            <span className="sr-only">Toggle sidebar</span>
+          </Button>
+          {selectedChat && (
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                <span className="text-sm font-medium">
+                  {selectedChat.users
+                    .find((user) => user._id !== currentUser._id)
+                    ?.username?.charAt(0) || "U"}
+                </span>
+              </div>
+              <span className="font-medium">
+                {selectedChat.users.find((user) => user._id !== currentUser._id)
+                  ?.username || "Chat"}
+              </span>
+            </div>
+          )}
+        </div>
+
         {selectedChat ? (
           <ChatInterface chat={selectedChat} currentUser={currentUser} />
         ) : (

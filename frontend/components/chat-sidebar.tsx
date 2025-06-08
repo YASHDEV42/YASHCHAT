@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, X } from "lucide-react";
 import type { Chat } from "@/components/chat-app";
 import type { User } from "@/lib/auth";
 
@@ -100,8 +100,9 @@ export default function ChatSidebar({
         <div className="flex gap-2 flex-shrink-0">
           <Dialog open={isNewChatOpen} onOpenChange={setIsNewChatOpen}>
             <DialogTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Plus className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Plus className="h-4 w-4" />
+                <span className="sr-only">Start new chat</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md mx-4">
@@ -135,10 +136,10 @@ export default function ChatSidebar({
                       <Button
                         key={user._id}
                         variant="ghost"
-                        className="justify-start w-full"
+                        className="justify-start w-full h-auto p-3"
                         onClick={() => handleStartNewChat(user._id)}
                       >
-                        <Avatar className="h-10 w-10 mr-2 flex-shrink-0">
+                        <Avatar className="h-10 w-10 mr-3 flex-shrink-0">
                           <AvatarImage
                             src="/placeholder.svg?height=40&width=40"
                             alt={user.username}
@@ -163,7 +164,7 @@ export default function ChatSidebar({
         <div className="relative">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search messages..."
+            placeholder="Search conversations..."
             className="pl-8"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -184,18 +185,18 @@ export default function ChatSidebar({
             </p>
           </div>
         ) : (
-          <div className="space-y-1">
+          <div className="space-y-1 p-2">
             {filteredChats.map((chat) => (
               <div
                 key={chat._id}
-                className={`flex items-center px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors ${
+                className={`flex items-center p-3 cursor-pointer hover:bg-muted/50 transition-colors rounded-lg ${
                   selectedChat?._id === chat._id ? "bg-muted" : ""
                 }`}
                 onClick={() => onSelectChat(chat)}
               >
-                <Avatar className="h-9 w-9 flex-shrink-0">
+                <Avatar className="h-10 w-10 flex-shrink-0">
                   <AvatarImage
-                    src={"/placeholder.svg?height=36&width=36"}
+                    src={"/placeholder.svg?height=40&width=40"}
                     alt={getOtherUser(chat).username || "User Avatar"}
                   />
                   <AvatarFallback>

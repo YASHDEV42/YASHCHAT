@@ -103,7 +103,8 @@ export default function ChatInterface({
 
   return (
     <Card className="flex flex-col h-full rounded-none border-0 bg-background">
-      <CardHeader className="border-b px-4 bg-background">
+      {/* Desktop Header */}
+      <CardHeader className="hidden md:flex border-b px-4 bg-background">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
             <Avatar>
@@ -189,17 +190,17 @@ export default function ChatInterface({
             type="button"
             variant="ghost"
             size="icon"
-            className="text-muted-foreground"
+            className="text-muted-foreground h-8 w-8"
           >
-            <Smile className="h-5 w-5" />
+            <Smile className="h-4 w-4" />
           </Button>
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="text-muted-foreground"
+            className="text-muted-foreground h-8 w-8"
           >
-            <Paperclip className="h-5 w-5" />
+            <Paperclip className="h-4 w-4" />
           </Button>
           <Input
             placeholder="Type a message"
@@ -212,9 +213,9 @@ export default function ChatInterface({
             type="submit"
             size="icon"
             disabled={!isConnected || !newMessage.trim()}
-            className="rounded-full"
+            className="rounded-full h-8 w-8"
           >
-            <Send className="h-4 w-4" />
+            <Send className="h-3 w-3" />
           </Button>
         </form>
       </CardFooter>
