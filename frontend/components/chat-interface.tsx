@@ -29,7 +29,7 @@ export default function ChatInterface({
   const { messages, sendMessage, isConnected } = useSocket(chat._id);
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
+  console.log("messages", messages);
   // Get the other user in the chat
   const otherUser =
     chat.users.find((user) => user._id !== currentUser._id) || chat.users[0];
@@ -49,37 +49,41 @@ export default function ChatInterface({
     console.log("chat._id", chat._id);
     console.log("otherUser._id", otherUser._id);
     console.log("currentUser._id", currentUser._id);
+
     const success = sendMessage(newMessage, otherUser._id);
     if (success) {
       setNewMessage("");
     }
   };
+  const formatTime = (dateInput: string | Date) => {
+    const time = new Date(dateInput);
+    if (isNaN(time.getTime())) return "Invalid time";
 
-  const formatTime = (date: Date) => {
     return new Intl.DateTimeFormat("en-US", {
       hour: "numeric",
       minute: "numeric",
       hour12: true,
-    }).format(new Date(date));
+    }).format(time);
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (dateInput: string | Date) => {
+    const messageDate = new Date(dateInput);
+    if (isNaN(messageDate.getTime())) return "Invalid date";
+
     const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
 
-    const messageDate = new Date(date);
+    const isSameDate = (d1: Date, d2: Date) =>
+      d1.toDateString() === d2.toDateString();
 
-    if (messageDate.toDateString() === today.toDateString()) {
-      return "Today";
-    } else if (messageDate.toDateString() === yesterday.toDateString()) {
-      return "Yesterday";
-    } else {
-      return new Intl.DateTimeFormat("en-US", {
-        month: "short",
-        day: "numeric",
-      }).format(messageDate);
-    }
+    if (isSameDate(messageDate, today)) return "Today";
+    if (isSameDate(messageDate, yesterday)) return "Yesterday";
+
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+    }).format(messageDate);
   };
 
   // Group messages by date
@@ -87,7 +91,7 @@ export default function ChatInterface({
     const groups: { [key: string]: Message[] } = {};
 
     messages.forEach((message) => {
-      const date = formatDate(new Date(message.timestamp));
+      const date = formatDate(new Date(message.timestamp || message.createdAt));
       if (!groups[date]) {
         groups[date] = [];
       }
@@ -141,16 +145,16 @@ export default function ChatInterface({
 
                 {dateMessages.map((message) => (
                   <div
-                    key={message.id}
+                    key={message._id}
                     className={`flex ${
-                      message.senderId === currentUser._id
+                      message.sender?.toString() === currentUser._id.toString()
                         ? "justify-end"
                         : "justify-start"
                     }`}
                   >
                     <div
                       className={`max-w-[70%] rounded-lg p-3 ${
-                        message.senderId === currentUser._id
+                        message.sender.toString() === currentUser._id.toString()
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted text-foreground"
                       }`}
@@ -158,12 +162,13 @@ export default function ChatInterface({
                       <div className="text-sm">{message.content}</div>
                       <div
                         className={`text-xs text-right mt-1 ${
-                          message.senderId === currentUser._id
+                          message.sender?.toString() ===
+                          currentUser._id.toString()
                             ? "text-primary-foreground/70"
                             : "text-muted-foreground"
                         }`}
                       >
-                        {formatTime(message.timestamp)}
+                        {formatTime(message.timestamp || message.createdAt)}
                       </div>
                     </div>
                   </div>

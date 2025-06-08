@@ -21,9 +21,9 @@ interface ChatSidebarProps {
   onSelectChat: (chat: Chat) => void;
   currentUser: User;
   loading: boolean;
-  allUsers?: User[]; // All users available for starting new chats
-  onStartNewChat?: (userId: string) => void; // Callback to start a new chat
-  loadingUsers?: boolean; // Loading state for users
+  allUsers?: User[];
+  onStartNewChat?: (userId: string) => void;
+  loadingUsers?: boolean;
 }
 
 export default function ChatSidebar({
@@ -47,11 +47,9 @@ export default function ChatSidebar({
       .includes(searchQuery.toLowerCase());
   });
 
-  // Filter users for new chat (exclude current user and users already in chats)
   const filteredUsers = allUsers.filter((user) => {
     if (user._id === currentUser._id) return false;
 
-    // Check if user already has a chat with current user
     const hasExistingChat = chats.some((chat) =>
       chat.users.some((chatUser) => chatUser._id === user._id)
     );
@@ -61,14 +59,12 @@ export default function ChatSidebar({
     return user.username.toLowerCase().includes(userSearchQuery.toLowerCase());
   });
 
-  // Get the other user in a chat
   const getOtherUser = (chat: Chat) => {
     return (
       chat.users.find((user) => user._id !== currentUser._id) || chat.users[0]
     );
   };
 
-  // Format timestamp to readable time
   const formatTime = (date: Date) => {
     return new Intl.DateTimeFormat("en-US", {
       hour: "numeric",
@@ -84,11 +80,11 @@ export default function ChatSidebar({
   };
 
   return (
-    <div className="w-80 border-r bg-background flex flex-col h-full">
+    <div className="w-80 sm:w-72 md:w-80 border-r bg-background flex flex-col h-full shadow-lg md:shadow-none">
       {/* Header */}
       <div className="p-4 bg-muted/50 flex justify-between items-center border-b">
-        <div className="flex items-center">
-          <Avatar className="h-9 w-9">
+        <div className="flex items-center min-w-0">
+          <Avatar className="h-9 w-9 flex-shrink-0">
             <AvatarImage
               src={"/placeholder.svg?height=36&width=36"}
               alt={currentUser.username || "User Avatar"}
@@ -97,21 +93,22 @@ export default function ChatSidebar({
               {currentUser.username?.charAt(0) || "U"}
             </AvatarFallback>
           </Avatar>
-          <span className="ml-2 font-medium">{currentUser.username}</span>
+          <span className="ml-2 font-medium truncate">
+            {currentUser.username}
+          </span>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-shrink-0">
           <Dialog open={isNewChatOpen} onOpenChange={setIsNewChatOpen}>
             <DialogTrigger asChild>
               <Button variant="ghost" size="icon">
                 <Plus className="h-5 w-5" />
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md mx-4">
               <DialogHeader>
                 <DialogTitle>Start New Chat</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                {/* Search users */}
                 <div className="relative">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -122,7 +119,6 @@ export default function ChatSidebar({
                   />
                 </div>
 
-                {/* Users list */}
                 <div className="max-h-80 overflow-y-auto space-y-1">
                   {loadingUsers ? (
                     <div className="p-4 text-center text-muted-foreground">
@@ -142,7 +138,7 @@ export default function ChatSidebar({
                         className="justify-start w-full"
                         onClick={() => handleStartNewChat(user._id)}
                       >
-                        <Avatar className="h-10 w-10 mr-2">
+                        <Avatar className="h-10 w-10 mr-2 flex-shrink-0">
                           <AvatarImage
                             src="/placeholder.svg?height=40&width=40"
                             alt={user.username}
@@ -151,7 +147,7 @@ export default function ChatSidebar({
                             {user.username?.charAt(0) || "U"}
                           </AvatarFallback>
                         </Avatar>
-                        <span>{user.username}</span>
+                        <span className="truncate">{user.username}</span>
                       </Button>
                     ))
                   )}
@@ -164,11 +160,15 @@ export default function ChatSidebar({
 
       {/* Search */}
       <div className="p-4 border-b">
-        <Input
-          placeholder="Search messages..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+        <div className="relative">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search messages..."
+            className="pl-8"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
       </div>
 
       {/* Chat List */}
@@ -179,19 +179,21 @@ export default function ChatSidebar({
           </div>
         ) : chats.length === 0 ? (
           <div className="flex items-center justify-center py-8">
-            <p className="text-muted-foreground">No conversations yet</p>
+            <p className="text-muted-foreground text-center px-4">
+              No conversations yet
+            </p>
           </div>
         ) : (
           <div className="space-y-1">
             {filteredChats.map((chat) => (
               <div
                 key={chat._id}
-                className={`flex items-center px-4 py-3 cursor-pointer hover:bg-muted/50 ${
+                className={`flex items-center px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors ${
                   selectedChat?._id === chat._id ? "bg-muted" : ""
                 }`}
                 onClick={() => onSelectChat(chat)}
               >
-                <Avatar className="h-9 w-9">
+                <Avatar className="h-9 w-9 flex-shrink-0">
                   <AvatarImage
                     src={"/placeholder.svg?height=36&width=36"}
                     alt={getOtherUser(chat).username || "User Avatar"}
@@ -210,15 +212,15 @@ export default function ChatSidebar({
                     </p>
                   )}
                 </div>
-                <div className="ml-4 flex-shrink-0 flex items-center">
+                <div className="ml-4 flex-shrink-0 flex flex-col items-end">
                   {chat.lastMessage && (
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground mb-1">
                       {formatTime(chat.lastMessage.timestamp)}
                     </p>
                   )}
                   {chat.unreadCount > 0 && (
-                    <div className="ml-2 w-4 h-4 rounded-full bg-primary text-xs flex items-center justify-center text-background">
-                      {chat.unreadCount}
+                    <div className="w-5 h-5 rounded-full bg-primary text-xs flex items-center justify-center text-primary-foreground">
+                      {chat.unreadCount > 99 ? "99+" : chat.unreadCount}
                     </div>
                   )}
                 </div>

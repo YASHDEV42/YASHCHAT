@@ -33,6 +33,7 @@ module.exports = function socketSetup(server) {
       } catch (err) {
         console.error("Socket authentication error:", err.message);
         socket.emit("unauthorized", { message: "Invalid token" });
+
         socket.disconnect();
       }
     });
@@ -47,7 +48,7 @@ module.exports = function socketSetup(server) {
 
       try {
         const messages = await Message.find({ chatId })
-          .sort({ createdAt: -1 })
+          .sort({ createdAt: 1 })
           .limit(50)
           .populate("sender", "username");
 
@@ -57,8 +58,14 @@ module.exports = function socketSetup(server) {
           senderName: msg.sender.username,
           content: msg.content,
           createdAt: msg.createdAt,
+          receiver: msg.receiver,
+          chatId: msg.chatId,
+          timestamp: msg.createdAt.toISOString(),
+          // Ensure timestamp is in ISO format for consistency
         }));
-
+        console.log(
+          `Loaded ${chatMessages.length} messages for chat room: ${chatId}`
+        );
         socket.emit("messageHistory", chatMessages);
       } catch (error) {
         console.error("Error fetching message history:", error);
@@ -81,14 +88,16 @@ module.exports = function socketSetup(server) {
           content,
           chatId,
           receiver: receiverId,
+          createdAt: new Date(),
         });
 
         await newMessage.save();
 
         // Populate sender for sending to clients
-        const populatedMessage = await newMessage
-          .populate("sender", "username")
-          .execPopulate();
+        const populatedMessage = await Message.populate(newMessage, {
+          path: "sender",
+          select: "username",
+        });
 
         const messageToSend = {
           _id: populatedMessage._id,

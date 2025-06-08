@@ -5,13 +5,14 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { io, type Socket } from "socket.io-client";
 
 export interface Message {
-  id: string;
-  senderId: string;
+  _id: string;
+  sender: string;
   content: string;
   chatId: string;
-  receiverId?: string;
+  receiver: string;
   timestamp: Date;
-  senderName?: string;
+  senderName: string;
+  createdAt: string;
 }
 
 export function useSocket(chatId: string) {
@@ -40,7 +41,7 @@ export function useSocket(chatId: string) {
         socketInstance.emit("authenticate", { token });
 
         socketInstance.once("authenticated", () => {
-          socketInstance.emit("join", chatId);
+          socketInstance.emit("join", { chatId });
         });
       }
     });
