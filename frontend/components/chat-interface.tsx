@@ -112,7 +112,7 @@ export default function ChatInterface({
                 alt={otherUser.username}
               />
               <AvatarFallback>
-                {otherUser?.username.charAt(0) || ""}
+                {otherUser?.username?.charAt(0) ?? ""}
               </AvatarFallback>
             </Avatar>
             <div className="ml-3">

@@ -56,10 +56,34 @@ export default function ChatApp() {
         throw new Error("Failed to create chat");
       }
 
-      const newChat: Chat = await response.json();
-      setChats((prev) => [...prev, newChat]);
-      setSelectedChat(newChat);
-      // Close sidebar on mobile after starting new chat
+      // ✅ Re-fetch all chats (to avoid duplication or stale state)
+      const token = localStorage.getItem("token") || "";
+      const updatedChatsResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE}/api/chats/user/${currentUser?._id}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!updatedChatsResponse.ok) {
+        throw new Error("Failed to refresh chats");
+      }
+
+      const updatedChats: Chat[] = await updatedChatsResponse.json();
+      setChats(updatedChats);
+
+      // ✅ Set selected chat to the one with that user
+      const startedChat = updatedChats.find((chat) =>
+        chat.users.some((u) => u._id === userId)
+      );
+
+      if (startedChat) {
+        setSelectedChat(startedChat);
+      }
+
       setSidebarOpen(false);
     } catch (error) {
       console.error("Error creating chat:", error);

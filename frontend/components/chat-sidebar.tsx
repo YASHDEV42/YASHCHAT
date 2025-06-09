@@ -42,9 +42,11 @@ export default function ChatSidebar({
 
   const filteredChats = chats.filter((chat) => {
     const otherUser = chat.users.find((user) => user._id !== currentUser._id);
-    return otherUser?.username
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
+    if (!otherUser) return false;
+    return (
+      otherUser?.username?.toLowerCase().includes(searchQuery.toLowerCase()) ??
+      false
+    );
   });
 
   const filteredUsers = allUsers.filter((user) => {
