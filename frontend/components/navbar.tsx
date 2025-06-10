@@ -27,6 +27,11 @@ export default function Navbar() {
     setIsLoading(false);
   }, []);
 
+  // Check if the user is logged in every url change
+  useEffect(() => {
+    const user = getCurrentUser(localStorage.getItem("token") || "");
+    setIsLoggedIn(!!user);
+  }, [pathname]);
   const handleLogout = () => {
     logout();
     setIsMobileMenuOpen(false);
