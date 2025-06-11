@@ -1,5 +1,6 @@
 const Chat = require("../models/Chat");
-
+const Message = require("../models/Message");
+const User = require("../models/User");
 const getChat = async (req, res) => {
   try {
     const chat = await Chat.findById(req.params.id).populate(
@@ -80,6 +81,12 @@ const deleteChat = async (req, res) => {
     if (!chat) {
       return res.status(404).json({ message: "Chat not found" });
     }
+    await Message.deleteMany({ chatId: req.params.id });
+    await User.updateMany(
+      { _id: { $in: chat.users } },
+      { $pull: { chats: req.params.id } }
+    );
+
     res.status(200).json({ message: "Chat deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
