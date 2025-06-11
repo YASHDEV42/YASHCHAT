@@ -164,7 +164,7 @@ export default function ChatInterface({
       console.log("Deleting chat:", chat._id);
 
       const response = await fetch(
-        `http://localhost:5000/api/chats/${chat._id}`,
+        `${process.env.NEXT_PUBLIC_API_BASE}/api/chats/${chat._id}`,
         {
           method: "DELETE",
           headers: {
