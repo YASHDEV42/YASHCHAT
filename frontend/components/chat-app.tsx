@@ -30,12 +30,43 @@ export default function ChatApp() {
 
   const handleSelectChat = (chat: Chat) => {
     setSelectedChat(chat);
-    // Close sidebar on mobile after selecting a chat
+
     setSidebarOpen(false);
-    // Mark messages as read
+
     setChats((prevChats) =>
       prevChats.map((c) => (c._id === chat._id ? { ...c, unreadCount: 0 } : c))
     );
+  };
+
+  const refreshChats = async () => {
+    const token = localStorage.getItem("token") || "";
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE}/api/chats/user/${currentUser?._id}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to refresh chats");
+      }
+
+      const updatedChats: Chat[] = await response.json();
+      setChats(updatedChats);
+
+      if (
+        selectedChat &&
+        !updatedChats.some((chat) => chat._id === selectedChat._id)
+      ) {
+        setSelectedChat(null);
+      }
+    } catch (error) {
+      console.error("Error refreshing chats:", error);
+    }
   };
 
   const handleStartNewChat = async (userId: string) => {
@@ -56,7 +87,6 @@ export default function ChatApp() {
         throw new Error("Failed to create chat");
       }
 
-      // ✅ Re-fetch all chats (to avoid duplication or stale state)
       const token = localStorage.getItem("token") || "";
       const updatedChatsResponse = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/chats/user/${currentUser?._id}`,
@@ -251,7 +281,11 @@ export default function ChatApp() {
         </div>
 
         {selectedChat ? (
-          <ChatInterface chat={selectedChat} currentUser={currentUser} />
+          <ChatInterface
+            chat={selectedChat}
+            currentUser={currentUser}
+            refreshChats={refreshChats}
+          />
         ) : (
           <div className="flex-1 flex items-center justify-center bg-background">
             <div className="text-center text-muted-foreground">
