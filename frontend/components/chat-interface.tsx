@@ -12,14 +12,7 @@ import {
   CardFooter,
   CardHeader,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+
 import { Send, MoreVertical, Smile, ChevronDown } from "lucide-react";
 import { useSocket, type Message } from "@/lib/socket";
 import type { User } from "@/lib/auth";
@@ -32,7 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Trash2, AlertTriangle } from "lucide-react";
+import { Trash2 } from "lucide-react";
 
 interface ChatInterfaceProps {
   chat: Chat;
@@ -51,8 +44,6 @@ export default function ChatInterface({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   console.log("messages", messages);
 
@@ -148,18 +139,12 @@ export default function ChatInterface({
     setShowEmojiPicker(false);
   };
 
-  const handleDeleteChatClick = () => {
-    setShowDeleteDialog(true);
-  };
-
   const handleDeleteChat = async () => {
     try {
       if (!chat || !currentUser) {
         console.error("Chat or current user is not defined");
         return;
       }
-
-      setIsDeleting(true);
 
       console.log("Deleting chat:", chat._id);
 
@@ -176,11 +161,6 @@ export default function ChatInterface({
       if (!response.ok) {
         throw new Error("Failed to delete chat");
       }
-
-      // Close dialog and reset state
-      setShowDeleteDialog(false);
-      setIsDeleting(false);
-
       await refreshChats();
 
       if (scrollContainerRef.current) {
@@ -194,13 +174,7 @@ export default function ChatInterface({
       console.log("Chat deleted successfully");
     } catch (error) {
       console.error("Error deleting chat:", error);
-      setIsDeleting(false);
     }
-  };
-
-  const handleCancelDelete = () => {
-    setShowDeleteDialog(false);
-    setIsDeleting(false);
   };
 
   useEffect(() => {
@@ -248,7 +222,7 @@ export default function ChatInterface({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem
-                  onClick={handleDeleteChatClick}
+                  onClick={handleDeleteChat}
                   className="text-destructive focus:text-destructive"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
@@ -370,56 +344,6 @@ export default function ChatInterface({
           </form>
         </CardFooter>
       </Card>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={showDeleteDialog}
-        onOpenChange={(open) => {
-          if (!open) {
-            setShowDeleteDialog(false);
-            setIsDeleting(false);
-          } else {
-            setShowDeleteDialog(open);
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10">
-                <AlertTriangle className="h-5 w-5 text-destructive" />
-              </div>
-              <div>
-                <DialogTitle className="text-left">Delete Chat</DialogTitle>
-                <DialogDescription className="text-left">
-                  Are you sure you want to delete this chat with{" "}
-                  <span className="font-medium">{otherUser.username}</span>?
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-          <div className="text-sm text-muted-foreground">
-            This action cannot be undone. All messages in this conversation will
-            be permanently deleted.
-          </div>
-          <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
-            <Button
-              variant="outline"
-              onClick={handleCancelDelete}
-              disabled={isDeleting}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDeleteChat}
-              disabled={isDeleting}
-            >
-              {isDeleting ? "Deleting..." : "Delete Chat"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
