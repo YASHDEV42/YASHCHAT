@@ -160,4 +160,4 @@ npm run dev
 
 ## 🧑‍💻 Author
 
-Made by [Yahya](https://github.com/Yahya)
+Made by [YASHDEV42](https://github.com/YASHDEV42)
