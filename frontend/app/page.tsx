@@ -27,7 +27,7 @@ export default function Home() {
                 Connect with friends in real-time
               </h1>
               <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
-                ChatConnect is a modern chat application that lets you
+                YASHCHAT is a modern chat application that lets you
                 communicate instantly with your friends and colleagues.
               </p>
             </div>
