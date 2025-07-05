@@ -112,7 +112,7 @@ export default function Signup() {
             Create an account
           </CardTitle>
           <CardDescription className="text-center">
-            Enter your details to create your ChatConnect account
+            Enter your details to create your YASHCHAT account
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
